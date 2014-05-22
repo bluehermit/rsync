@@ -1,0 +1,115 @@
+clinet 172.16.0.13 配置rsync
+
+卸载系统自带安装的rsync,安装3.0版的rsync
+# rpm -qa |grep rsync 
+rsync-2.6.8-3.1 
+# rpm -e rsync-2.6.8-3.1
+#tar zxvf rsync-3.0.9.tar.gz
+# ./configure --prefix=/usr/local && make && make install
+# vi /etc/rsyncd.conf
+添加下面的代码到rsyncd.conf中
+
+uid = nobody
+gid = nobody
+use chroot = no
+strict modes = yes
+max connections = 200
+pid file = /var/run/rsyncd.pid
+lock file = /var/run/rsync.lock
+log file = /var/log/rsyncd.log
+
+[test]
+path = /home/tongbu
+comment = test
+read only = no
+write only = no
+ignore errors = yes
+list = yes
+uid = root
+gid = root
+hosts allow =  172.16.0.33
+hosts deny = *
+
+启动rsync服务
+# rsync --daemon
+重启rsync的shell脚本
+kill -9 `cat /var/run/rsyncd.pid`
+rm -f /var/run/rsyncd.pid
+rm -f /var/run/rsyncd.lock
+rsync --daemon
+iptables设置
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 873 -j ACCEPT
+
+
+
+server 172.16.0.33 配置sersync2
+
+# tar zxvf sersync2.5.4_64bit_binary_stable_final.tar.gz 
+# cd GNU-Linux-x86 
+# mkdir /etc/sersync2 
+# cp confxml.xml /etc/sersync2 
+# cp sersync2 /usr/bin 
+
+# vi /etc/sersync2/confxml.xml
+修改以下<sersync>部分
+<sersync>
+        <localpath watch="/home/tongbu">
+            <remote ip="172.16.0.13" name="test"/>
+            <!--<remote ip="192.168.8.40" name="tongbu"/>-->
+        </localpath>
+        <rsync>
+            <commonParams params="-artuz"/>
+            <auth start="false" users="root" passwordfile="/etc/rsync.pas"/>
+            <userDefinedPort start="false" port="874"/><!-- port=874 -->
+            <timeout start="false" time="100"/><!-- timeout=100 -->
+            <ssh start="false"/>
+        </rsync>
+        <failLog path="/var/log/rsync_fail.log" timeToExecute="60"/><!--default every 60mins execute once-->
+        <crontab start="false" schedule="600"><!--600mins-->
+            <crontabfilter start="false">
+                <exclude expression="*.php"></exclude>
+                <exclude expression="info/*"></exclude>
+            </crontabfilter>
+        </crontab>
+        <plugin start="false" name="command"/>
+    </sersync>
+
+运行sersync2 
+# sersync2 -r -o /etc/sersync2/confxml.xml &
+#后台启动 nohup sersync2 -r -o /etc/sersync2/confxml.xml > myout.file 2>&1
+
+执行命令：./sersync2  -r -d 启动sersync
+r是先执行一遍完整同步，d是后台运行，稍后介绍所有启动参数。
+
+查看启动参数帮助
+./sersync2 --help
+ 
+指定配置文件
+./sersync2 -o XXXX.xml
+ 
+对于sersync使用可执行文件目录下的默认配置文件confxml.xml，如果需要使用另一个配置文件，可以使用－o参数指定其它配置文件。
+.指定默认的线程池的线程总数
+./sersync2 -n num
+ 
+不进行同步，只运行插件
+./sersync2 -m pluginName
+例如./sersync2 -m command，则在监控到文件事件后，不对远程目标服务器进行同步，而是直接运行command插件。
+ 
+多个参数可以配合使用
+./sersync2 -n 8 -o abc.xml -r -d
+表示，设置线程池工作线程为8个，指定abc.xml作为配置文件，在实时监控前作一次整体同步，以守护进程方式在后台运行。
+ 
+通常情况下，对本地到远程整体同步一遍后，在后台运行实时同步。
+./sersync2 -d
+
+
+验收
+
+
+在server创建文件
+# touch /home/tongbu/test
+
+在client查看同步情况
+# ll /home/tongbu
+
+在server删除clinet也删除
