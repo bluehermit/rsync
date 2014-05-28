@@ -103,8 +103,7 @@ r是先执行一遍完整同步，d是后台运行，稍后介绍所有启动参
 ./sersync2 -d
 
 
-验收
-
+测试验收：
 
 在server创建文件
 # touch /home/tongbu/test

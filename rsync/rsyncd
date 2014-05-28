@@ -1,12 +1,10 @@
 #!/bin/bash
 
 # chkconfig: - 85 15
-# description: nginx is a World Wide Web server. It is used to serve
 #this script for start|stop rsync daemon service 
 #date:2012/2/13 
  
-status1=$(ps -ef | egrep "rsync --daemon" | grep -v 'grep') 
-status2=$(ps -ef | egrep "rsync --daemon" | grep -v 'grep')
+status=$(netstat -lnp | grep -w 873 | grep -v 'grep') 
 pidfile="/var/run/rsyncd.pid" 
 start_rsync="rsync --daemon"
 pid=$(ps -ef | egrep "rsync --daemon"  | grep -v 'grep' | gawk -F' '  '{print $2}')
@@ -14,13 +12,12 @@ pid=$(ps -ef | egrep "rsync --daemon"  | grep -v 'grep' | gawk -F' '  '{print $2
  
 function rsyncstart() { 
  
-    if [ "${status1}X" == "X" ];then 
- 
+    if [ "${status}X" == "X" ];then 
        ${start_rsync}   
        
-       status2=$(ps -ef | egrep "rsync --daemon" | grep -v 'grep')
+        status=$(netstat -lnp | grep -w 873 | grep -v 'grep') 
   
-        if [  "${status2}X" != "X"  ];then 
+        if [  "${status}X" != "X"  ];then 
              
             echo "rsync service start.......OK" 
              
@@ -35,14 +32,13 @@ function rsyncstart() {
  
 function rsyncstop() { 
  
-    if [ "${status2}X" != "X" ];then 
+    if [ "${status}X" != "X" ];then 
      
         kill -9 ${pid}
         rm -f $pidfile     
- 
-        status1=$(ps -ef | egrep "rsync --daemon" | grep -v 'grep')    
-    
-        if [ "${status1}X" == "X" ];then 
+        status=$(netstat -lnp | grep -w 873 | grep -v 'grep') 
+         
+        if [ "${status}X" == "X" ];then 
              
             echo "rsync service stop.......OK" 
         fi 
@@ -57,7 +53,7 @@ function rsyncstop() {
 function rsyncstatus() { 
  
  
-    if [ "${status1}X" != "X" ];then 
+    if [ "${status}X" != "X" ];then 
  
         echo "rsync service is running !"   
      
@@ -71,7 +67,7 @@ function rsyncstatus() {
  
 function rsyncrestart() { 
  
-    if [ "${status1}X" == "X" ];then 
+    if [ "${status}X" == "X" ];then 
  
                echo "rsync service is not running..." 
  
